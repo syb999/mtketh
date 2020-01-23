@@ -1409,11 +1409,19 @@ static int fe_change_mtu(struct net_device *dev, int new_mtu)
 	int frag_size, old_mtu;
 	u32 fwd_cfg;
 
+	if (!(priv->flags & FE_FLAG_JUMBO_FRAME))
+		return eth_change_mtu(dev, new_mtu);
+
+	if (IS_ENABLED(CONFIG_SOC_MT7621))
+		if (new_mtu > 2048)
+			return -EINVAL;
+
+	frag_size = fe_max_frag_size(new_mtu);
+	if (new_mtu < 68 || frag_size > PAGE_SIZE)
+		return -EINVAL;
+
 	old_mtu = dev->mtu;
 	dev->mtu = new_mtu;
-
-	if (!(priv->flags & FE_FLAG_JUMBO_FRAME))
-		return 0;
 
 	/* return early if the buffer sizes will not change */
 	if (old_mtu <= ETH_DATA_LEN && new_mtu <= ETH_DATA_LEN)
@@ -1436,7 +1444,6 @@ static int fe_change_mtu(struct net_device *dev, int new_mtu)
 		if (new_mtu <= ETH_DATA_LEN) {
 			fwd_cfg &= ~FE_GDM1_JMB_EN;
 		} else {
-			frag_size = fe_max_frag_size(new_mtu);
 			fwd_cfg &= ~(FE_GDM1_JMB_LEN_MASK << FE_GDM1_JMB_LEN_SHIFT);
 			fwd_cfg |= (DIV_ROUND_UP(frag_size, 1024) <<
 			FE_GDM1_JMB_LEN_SHIFT) | FE_GDM1_JMB_EN;
@@ -1571,9 +1578,6 @@ static int fe_probe(struct platform_device *pdev)
 				~(NETIF_F_HW_VLAN_CTAG_TX |
 				  NETIF_F_HW_VLAN_CTAG_RX);
 	netdev->features |= netdev->hw_features;
-
-	if (IS_ENABLED(CONFIG_SOC_MT7621))
-		netdev->max_mtu = 2048;
 
 	/* fake rx vlan filter func. to support tx vlan offload func */
 	if (fe_reg_table[FE_REG_FE_DMA_VID_BASE])
