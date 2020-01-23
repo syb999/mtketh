@@ -14,7 +14,7 @@ config NET_RALINK_RT288X
 
 config NET_RALINK_RT305X
 	bool "RT305X/MT7628"
-	depends (SOC_RT305X || SOC_MT7620)
+	depends on (SOC_RT305X || SOC_MT7620)
 
 config NET_RALINK_RT3883
 	bool "RT3883"
