@@ -82,8 +82,8 @@ static const u16 mt7621_reg_table[FE_REG_COUNT] = {
 
 static int mt7621_gsw_config(struct fe_priv *priv)
 {
-	if (priv->mii_bus &&  mdiobus_get_phy(priv->mii_bus, 0x1f))
-		mt7530_probe(priv->dev, NULL, priv->mii_bus, 1);
+	if (priv->mii_bus &&  priv->mii_bus->phy_map[0x1f])
+		mt7530_probe(priv->dev, NULL, priv->mii_bus->phy_map[1]);
 
 	return 0;
 }
@@ -144,8 +144,7 @@ static void mt7621_init_data(struct fe_soc_data *data,
 	netdev->hw_features = NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
 		NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
 		NETIF_F_SG | NETIF_F_TSO |
-		NETIF_F_TSO6 | NETIF_F_IPV6_CSUM |
-		NETIF_F_TSO_MANGLEID;
+		NETIF_F_TSO6 | NETIF_F_IPV6_CSUM;
 }
 
 static void mt7621_set_mac(struct fe_priv *priv, unsigned char *mac)
