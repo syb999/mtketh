@@ -56,7 +56,6 @@ static int fe_set_settings(struct net_device *dev,
 			priv->phy_flags = FE_PHY_FLAG_ATTACH;
 		} else
 			goto out_sset;
-		}
 	}
 
 	return phy_ethtool_sset(priv->phy_dev, cmd);
