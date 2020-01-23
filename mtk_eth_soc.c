@@ -218,9 +218,8 @@ static inline void fe_set_txd(struct fe_tx_dma *txd, struct fe_tx_dma *dma_txd)
 
 static void fe_clean_rx(struct fe_priv *priv)
 {
-	struct fe_rx_ring *ring = &priv->rx_ring;
-	struct page *page;
 	int i;
+	struct fe_rx_ring *ring = &priv->rx_ring;
 
 	if (ring->rx_data) {
 		for (i = 0; i < ring->rx_ring_size; i++)
@@ -244,13 +243,6 @@ static void fe_clean_rx(struct fe_priv *priv)
 				  ring->rx_phys);
 		ring->rx_dma = NULL;
 	}
-
-	if (!ring->frag_cache.va)
-	    return;
-
-	page = virt_to_page(ring->frag_cache.va);
-	__page_frag_cache_drain(page, ring->frag_cache.pagecnt_bias);
-	memset(&ring->frag_cache, 0, sizeof(ring->frag_cache));
 }
 
 static int fe_alloc_rx(struct fe_priv *priv)
@@ -265,9 +257,7 @@ static int fe_alloc_rx(struct fe_priv *priv)
 		goto no_rx_mem;
 
 	for (i = 0; i < ring->rx_ring_size; i++) {
-		ring->rx_data[i] = page_frag_alloc(&ring->frag_cache,
-						   ring->frag_size,
-						   GFP_KERNEL);
+		ring->rx_data[i] = netdev_alloc_frag(ring->frag_size);
 		if (!ring->rx_data[i])
 			goto no_rx_mem;
 	}
@@ -898,8 +888,7 @@ static int fe_poll_rx(struct napi_struct *napi, int budget,
 			break;
 
 		/* alloc new buffer */
-		new_data = page_frag_alloc(&ring->frag_cache, ring->frag_size,
-					   GFP_ATOMIC);
+		new_data = netdev_alloc_frag(ring->frag_size);
 		if (unlikely(!new_data)) {
 			stats->rx_dropped++;
 			goto release_desc;
