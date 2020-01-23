@@ -1275,9 +1275,6 @@ static int fe_open(struct net_device *dev)
 	napi_enable(&priv->rx_napi);
 	fe_int_enable(priv->soc->tx_int | priv->soc->rx_int);
 	netif_start_queue(dev);
-#ifdef CONFIG_NET_MEDIATEK_OFFLOAD
-	mtk_ppe_probe(priv);
-#endif
 
 	return 0;
 }
@@ -1314,10 +1311,6 @@ static int fe_stop(struct net_device *dev)
 
 	fe_free_dma(priv);
 
-#ifdef CONFIG_NET_MEDIATEK_OFFLOAD
-	mtk_ppe_remove(priv);
-#endif
-
 	return 0;
 }
 
@@ -1325,26 +1318,19 @@ static int __init fe_init(struct net_device *dev)
 {
 	struct fe_priv *priv = netdev_priv(dev);
 	struct device_node *port;
-	const char *mac_addr;
 	int err;
 
 	priv->soc->reset_fe();
 
 	if (priv->soc->switch_init)
-		if (priv->soc->switch_init(priv)) {
-			netdev_err(dev, "failed to initialize switch core\n");
-			return -ENODEV;
-		}
+		priv->soc->switch_init(priv);
 
-	mac_addr = of_get_mac_address(priv->dev->of_node);
-	if (mac_addr)
-		ether_addr_copy(dev->dev_addr, mac_addr);
-
-	/* If the mac address is invalid, use random mac address  */
+	of_get_mac_address_mtd(priv->dev->of_node, dev->dev_addr);
+	/*If the mac address is invalid, use random mac address  */
 	if (!is_valid_ether_addr(dev->dev_addr)) {
 		random_ether_addr(dev->dev_addr);
 		dev_err(priv->dev, "generated random MAC address %pM\n",
-			dev->dev_addr);
+				dev->dev_addr);
 	}
 
 	err = fe_mdio_init(priv);
