@@ -229,7 +229,7 @@ static void fe_clean_rx(struct fe_priv *priv)
 							 ring->rx_dma[i].rxd1,
 							 ring->rx_buf_size,
 							 DMA_FROM_DEVICE);
-				skb_free_frag(ring->rx_data[i]);
+				put_page(virt_to_head_page(ring->rx_data[i]));
 			}
 
 		kfree(ring->rx_data);
@@ -898,14 +898,14 @@ static int fe_poll_rx(struct napi_struct *napi, int budget,
 					  ring->rx_buf_size,
 					  DMA_FROM_DEVICE);
 		if (unlikely(dma_mapping_error(&netdev->dev, dma_addr))) {
-			skb_free_frag(new_data);
+			put_page(virt_to_head_page(new_data));
 			goto release_desc;
 		}
 
 		/* receive data */
 		skb = build_skb(data, ring->frag_size);
 		if (unlikely(!skb)) {
-			skb_free_frag(new_data);
+			put_page(virt_to_head_page(new_data));
 			goto release_desc;
 		}
 		skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
