@@ -20,10 +20,10 @@ FE_STAT_REG_DECLARE
 #undef _FE
 };
 
-static int fe_get_link_ksettings(struct net_device *ndev,
-			   struct ethtool_link_ksettings *cmd)
+static int fe_get_settings(struct net_device *dev,
+		struct ethtool_cmd *cmd)
 {
-	struct fe_priv *priv = netdev_priv(ndev);
+	struct fe_priv *priv = netdev_priv(dev);
 
 	if (!priv->phy_dev)
 		return -ENODEV;
@@ -33,32 +33,33 @@ static int fe_get_link_ksettings(struct net_device *ndev,
 			return -ENODEV;
 	}
 
-	phy_ethtool_ksettings_get(ndev->phydev, cmd);
+	phy_ethtool_gset(priv->phy_dev, cmd);
 
 	return 0;
 }
 
-static int fe_set_link_ksettings(struct net_device *ndev,
-			   const struct ethtool_link_ksettings *cmd)
+static int fe_set_settings(struct net_device *dev,
+		struct ethtool_cmd *cmd)
 {
-	struct fe_priv *priv = netdev_priv(ndev);
+	struct fe_priv *priv = netdev_priv(dev);
 
 	if (!priv->phy_dev)
 		goto out_sset;
 
-	if (cmd->base.phy_address != priv->phy_dev->mdio.addr) {
-		if (priv->phy->phy_node[cmd->base.phy_address]) {
-			priv->phy_dev = priv->phy->phy[cmd->base.phy_address];
+	if (cmd->phy_address != priv->phy_dev->addr) {
+		if (priv->phy->phy_node[cmd->phy_address]) {
+			priv->phy_dev = priv->phy->phy[cmd->phy_address];
 			priv->phy_flags = FE_PHY_FLAG_PORT;
-		} else if (priv->mii_bus && mdiobus_get_phy(priv->mii_bus, cmd->base.phy_address)) {
-			priv->phy_dev = mdiobus_get_phy(priv->mii_bus, cmd->base.phy_address);
+		} else if (priv->mii_bus &&
+				priv->mii_bus->phy_map[cmd->phy_address]) {
+			priv->phy_dev = priv->mii_bus->phy_map[cmd->phy_address];
 			priv->phy_flags = FE_PHY_FLAG_ATTACH;
-		} else {
+		} else
 			goto out_sset;
 		}
 	}
 
-	return phy_ethtool_ksettings_set(ndev->phydev, cmd);
+	return phy_ethtool_sset(priv->phy_dev, cmd);
 
 out_sset:
 	return -ENODEV;
@@ -204,8 +205,8 @@ static void fe_get_ethtool_stats(struct net_device *dev,
 }
 
 static struct ethtool_ops fe_ethtool_ops = {
-	.get_link_ksettings	= fe_get_link_ksettings,
-	.set_link_ksettings	= fe_set_link_ksettings,
+	.get_settings		= fe_get_settings,
+	.set_settings		= fe_set_settings,
 	.get_drvinfo		= fe_get_drvinfo,
 	.get_msglevel		= fe_get_msglevel,
 	.set_msglevel		= fe_set_msglevel,
