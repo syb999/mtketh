@@ -179,7 +179,7 @@ static struct fe_soc_data mt7621_data = {
 };
 
 const struct of_device_id of_fe_match[] = {
-	{ .compatible = "ralink,mt7621-eth", .data = &mt7621_data },
+	{ .compatible = "mediatek,mt7621-eth", .data = &mt7621_data },
 	{},
 };
 
