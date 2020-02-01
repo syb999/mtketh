@@ -28,8 +28,8 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		sysc@0 {
-			compatible = "ralink,rt3050-sysc";
+		sysc: sysc@0 {
+			compatible = "ralink,rt3050-sysc", "syscon";
 			reg = <0x0 0x100>;
 		};
 
